@@ -1,0 +1,73 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Speech to Text</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <main class="app">
+    <header class="app__header">
+      <h1>Speech to Text</h1>
+      <p>Use your microphone to dictate notes directly in the browser.</p>
+    </header>
+
+    <section class="controls" aria-label="Speech controls">
+      <label class="controls__field" for="language-select">Language</label>
+      <select id="language-select" class="controls__select">
+        <option value="en-US">English (United States)</option>
+        <option value="en-GB">English (United Kingdom)</option>
+        <option value="es-ES">Spanish (Spain)</option>
+        <option value="fr-FR">French (France)</option>
+        <option value="de-DE">German</option>
+        <option value="hi-IN">Hindi</option>
+      </select>
+
+      <div class="controls__buttons">
+        <button id="start-button" class="button button--primary" type="button">Start Listening</button>
+        <button id="stop-button" class="button" type="button" disabled>Stop</button>
+        <button id="clear-button" class="button" type="button" disabled>Clear Transcript</button>
+        <button id="download-button" class="button" type="button" disabled>Download</button>
+      </div>
+    </section>
+
+    <section class="status" aria-live="polite">
+      <span id="status-indicator" class="status__indicator status__indicator--idle"></span>
+      <span id="status-text">Idle</span>
+    </section>
+
+    <section class="transcript" aria-label="Transcription output">
+      <label class="transcript__label" for="transcript-output">Live transcript</label>
+      <textarea id="transcript-output" class="transcript__output" rows="12" spellcheck="false"></textarea>
+    </section>
+
+    <section class="notes">
+      <h2>Tips</h2>
+      <ul>
+        <li>Grant microphone access when prompted.</li>
+        <li>Latest Chrome, Edge, or Safari offer the best Web Speech API support.</li>
+        <li>Keep this tab active while dictating for smoother recognition.</li>
+      </ul>
+    </section>
+
+    <section class="logs" aria-label="Speech recognition event log">
+      <div class="logs__header">
+        <h2>Event Log</h2>
+        <button id="clear-log-button" class="button button--ghost" type="button">Clear Log</button>
+      </div>
+      <p class="logs__hint">Latest events appear first. Use this log to debug microphone and permission issues.</p>
+      <ol id="event-log" class="logs__list" reversed></ol>
+    </section>
+  </main>
+
+  <template id="unsupported-template">
+    <div class="unsupported">
+      <h2>Speech recognition is not available</h2>
+      <p>Your browser does not support the Web Speech API. Try using the latest version of Chrome, Edge, or Safari.</p>
+    </div>
+  </template>
+
+  <script src="app.js" type="module"></script>
+</body>
+</html>
