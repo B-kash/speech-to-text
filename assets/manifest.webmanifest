@@ -1,0 +1,12 @@
+{
+    "name": "Speech to Text free online tool",
+    "short_name": "Speech to Text",
+    "start_url": ".",
+    "display": "standalone",
+    "background_color": "#0b0c10",
+    "theme_color": "#2563eb",
+    "icons": [
+      { "src": "assets/icons/logo.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }
+    ]
+  }
+  
