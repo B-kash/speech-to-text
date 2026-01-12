@@ -28,25 +28,3 @@ export const updateLogSectionVisibility = (section, debugEnabled = Boolean(windo
     section.classList.toggle("hidden", !debugEnabled);
   }
 };
-
-const toView = (level, message, detail) => {
-  const MAX_LOG_ENTRIES = 50;
-
-  const timestamp = new Date().toLocaleTimeString();
-  const entry = document.createElement("li");
-  entry.className = `logs__entry logs__entry--${level}`;
-  entry.innerHTML = `<span class="logs__time">${timestamp}</span><span class="logs__message">${message}</span>`;
-
-  if (detail) {
-    const detailText = typeof detail === "string" ? detail : JSON.stringify(detail, null, 2);
-    entry.dataset.detail = detailText;
-  }
-
-  logList.prepend(entry);
-
-  if (logList.children.length > MAX_LOG_ENTRIES) {
-    logList.removeChild(logList.lastElementChild);
-  }
-
-  toConsole(level, message, detail);
-}

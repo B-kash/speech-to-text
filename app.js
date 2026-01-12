@@ -66,7 +66,6 @@ const renderTranscript = (state, elements, log) => {
   }
 
   elements.transcriptOutput.value = transcript;
-  elements.transcriptOutput.textContent = transcript;
   elements.transcriptOutput.scrollTop = elements.transcriptOutput.scrollHeight;
   state.lastRenderedTranscript = transcript;
 
@@ -132,19 +131,25 @@ const createRecognition = () => {
   return recognition;
 };
 
-const attachControlHandlers = ({
-  elements,
-}) => {
-  if (Boolean(window.debug_mode) && elements.clearLogButton) {
-    elements.clearLogButton.addEventListener("click", onClearLogClick);
-  }
-  elements.startButton.addEventListener("click", onStartClick);
-  elements.stopButton.addEventListener("click", onStopClick);
-  elements.clearButton.addEventListener("click", onClearClick);
-  elements.downloadButton.addEventListener("click", onDownloadClick);
+// Initialize application state and elements
+const state = createState();
+const elements = collectElements();
+const recognition = createRecognition();
+const log = createLogger(elements.logList);
 
+// Helper functions that use initialized state
+const updateStatus = (text, isActive = false) => setStatus(elements, text, isActive);
+const renderCurrentTranscript = () => renderTranscript(state, elements, log);
+const syncControls = () => syncControlState(state, elements);
+const clearRestart = () => clearRestartTimer(state);
+const scheduleRestart = () => scheduleAutoRestart(state, recognition, log, updateStatus);
+
+const resetTranscript = () => {
+  state.finalSegments.length = 0;
+  state.interimTranscript = "";
 };
 
+// Event handlers
 const onDownloadClick = () => {
   if (state.finalSegments.length === 0) return;
   const transcript = state.finalSegments.join("\n").trim();
@@ -160,14 +165,13 @@ const onDownloadClick = () => {
   URL.revokeObjectURL(downloadLink.href);
   downloadLink.remove();
   log("info", "Transcript downloaded", { bytes: blob.size });
-}
+};
 
 const onClearClick = () => {
-  console.log("Clearing transcript as requested by user", state);
   resetTranscript();
   renderCurrentTranscript();
   syncControls();
-  console.log(state);
+  log("info", "Transcript cleared by user");
 };
 
 const onStopClick = () => {
@@ -176,7 +180,7 @@ const onStopClick = () => {
   state.manualStop = true;
   clearRestart();
   recognition.stop();
-}
+};
 
 const onStartClick = () => {
   if (state.isListening) return;
@@ -189,12 +193,12 @@ const onStartClick = () => {
     log("error", "Failed to start recognition", error);
     updateStatus("Start failed. Check console for details.");
   }
-}
+};
 
 const onClearLogClick = () => {
   resetLogView(elements.logList);
   log("info", "Event log cleared by user");
-}
+};
 
 const onRecStart = () => {
   state.isListening = true;
@@ -216,7 +220,7 @@ const onRecEnd = () => {
 const onRecError = (event) => {
   log("error", `Speech recognition error: ${event.error}`, event.message || event);
   updateStatus(`Error: ${event.error}`);
-}
+};
 
 const onRecResult = (event) => {
   let interimAggregate = "";
@@ -249,18 +253,29 @@ const onRecResult = (event) => {
   }
 };
 
-const attachRecognitionHandlers = ({
-  recognition,
-  state,
-  log,
-  updateStatus,
-}) => {
-  recognition.onstart = onRecStart
-  recognition.onend = onRecEnd
-  recognition.onerror = onRecError
-  recognition.onresult = onRecResult
-  recognition.onaudiostart = () => { log("info", "Audio capture started"); };
-  recognition.onaudioend = () => { if (state.isListening) { updateStatus("Audio stopped. Attempting to resume..."); } log("warn", "Audio stream ended while listening"); };
+// Attach event handlers
+const attachControlHandlers = () => {
+  if (Boolean(window.debug_mode) && elements.clearLogButton) {
+    elements.clearLogButton.addEventListener("click", onClearLogClick);
+  }
+  elements.startButton.addEventListener("click", onStartClick);
+  elements.stopButton.addEventListener("click", onStopClick);
+  elements.clearButton.addEventListener("click", onClearClick);
+  elements.downloadButton.addEventListener("click", onDownloadClick);
+};
+
+const attachRecognitionHandlers = () => {
+  recognition.onstart = onRecStart;
+  recognition.onend = onRecEnd;
+  recognition.onerror = onRecError;
+  recognition.onresult = onRecResult;
+  recognition.onaudiostart = () => log("info", "Audio capture started");
+  recognition.onaudioend = () => {
+    if (state.isListening) {
+      updateStatus("Audio stopped. Attempting to resume...");
+    }
+    log("warn", "Audio stream ended while listening");
+  };
   recognition.onspeechstart = () => log("info", "Speech detected");
   recognition.onspeechend = () => log("info", "Speech ended");
   recognition.onsoundstart = () => log("info", "Sound detected");
@@ -268,7 +283,7 @@ const attachRecognitionHandlers = ({
   recognition.onnomatch = () => log("warn", "Speech not recognized (no match)");
 };
 
-const attachVisibilityHandler = ({ state, scheduleRestart, log }) => {
+const attachVisibilityHandler = () => {
   document.addEventListener("visibilitychange", () => {
     log("info", "Visibility changed", { state: document.visibilityState });
     if (document.visibilityState === "visible" && !state.isListening && !state.manualStop) {
@@ -277,24 +292,8 @@ const attachVisibilityHandler = ({ state, scheduleRestart, log }) => {
   });
 };
 
-const resetTranscript = () => {
-  state.finalSegments.length = 0;
-  state.interimTranscript = "";
-};
-
-const state = createState();
-const elements = collectElements();
-const recognition = createRecognition();
-
-const updateStatus = (text, isActive = false) => setStatus(elements, text, isActive);
-const renderCurrentTranscript = () => renderTranscript(state, elements, log);
-const syncControls = () => syncControlState(state, elements);
-const clearRestart = () => clearRestartTimer(state);
-const scheduleRestart = () => scheduleAutoRestart(state, recognition, log, updateStatus);
-
+// Initialize application
 updateLogSectionVisibility(elements.logSection);
-
-const log = createLogger(elements.logList);
 log("info", "Initializing speech-to-text demo");
 
 if (!SpeechRecognition) {
@@ -305,19 +304,9 @@ if (!elements.transcriptOutput) {
   log("error", "Transcript output element is missing from the DOM");
 }
 
-
-attachControlHandlers({ elements });
-attachRecognitionHandlers({
-  recognition,
-  state,
-  log,
-  updateStatus,
-});
-
-attachVisibilityHandler({ state, scheduleRestart, log });
+attachControlHandlers();
+attachRecognitionHandlers();
+attachVisibilityHandler();
 
 renderCurrentTranscript();
 syncControls();
-
-
-document.addEventListener("DOMContentLoaded", ()=>{});
